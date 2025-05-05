@@ -1,0 +1,36 @@
+- topic: implement agents for connect 4
+    - 2 players, turn-based, perfect informaton
+    - phase 1: minmax/MCTS agent - individual (prototype, after ~ 5 weeks, ~May 19th)
+    - phase 2: (almost) free choice of more sophisticated agents - groups (project, at the end of semester)
+    - pass/fail (prototype: 40, project: 50, final presentation: 10), 50 to pass
+    - exam registration until May 16th (?)
+
+- course content: software carpentry/project management
+    - version control, test-driven development, documentation, debugging, profiling & optimization, other topics
+
+- about developing coding habits -> takes time
+- pay attention to tools, material on moodle page, documentation etc.
+
+- tutorials: mondays 10-14
+    - teaching components to discss things of general interest
+    - time to work on project, discuss, get help or feedback
+
+----------------------------
+
+- reliable code
+- efficient developments and implementation
+- share/publish code
+- maintain/update improve code -> readable and understandable, documentation
+- easy and intuitive understandable
+- flexible/adaptable/expandable code
+- correctness and tests are critical
+
+good code:
+- work, easy to read, testable, efficient, easy to change, simple
+
+
+convention for scientific code -> see slides
+
+dependency management:
+- conda (outdated?)
+- Uv (recommendation)
