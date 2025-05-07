@@ -148,7 +148,7 @@ def get_lowest_empty_row(board, col):
     return lowest_empty_row
 
 
-def connected_four(board: np.ndarray, player: BoardPiece, last_action: PlayerAction) -> bool:
+def connected_four(board: np.ndarray, last_action: PlayerAction, player: BoardPiece) -> bool:
     """
     Returns True if the last action of the player resulted in four adjacent pieces 
     equal to `player` arranged in either a horizontal, vertical, or diagonal line. 
