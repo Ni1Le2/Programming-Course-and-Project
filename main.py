@@ -3,12 +3,13 @@ import time
 from game_utils import PLAYER1, PLAYER2, PLAYER1_PRINT, PLAYER2_PRINT, GameState, MoveStatus, GenMove
 from game_utils import initialize_game_state, pretty_print_board, apply_player_action, check_end_state, check_move_status
 from agents.agent_human_user import user_move
+from agents.agent_random import generate_move
 
 
 
 def human_vs_agent(
     generate_move_1: GenMove,
-    generate_move_2: GenMove = user_move,
+    generate_move_2: GenMove = generate_move,
     player_1: str = "Player 1",
     player_2: str = "Player 2",
     args_1: tuple = (),

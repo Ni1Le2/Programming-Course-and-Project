@@ -79,11 +79,10 @@ def pretty_print_board(board: np.ndarray) -> str:
     # top border row
     pretty_board += "|==============|\n"
 
-    # board rows
-    for r_i, row in enumerate(board):
-        # board[0,0] should appear in lower left, so 0th row should be displayed at the bottom,
-        # 0th col should be displayed at the front
-        reverse_row_idx = BOARD_ROWS-row
+    # board[0,0] should appear in lower left, so 0th row should be displayed at the bottom,
+    # 0th col should be displayed at the front
+    # -> flip board matrix upside down
+    for r_i, row in enumerate(np.flipud(board)):
         pretty_board += "|"
 
         # each row will contain only integers: 0: no player, 1/2: player 1/2
@@ -141,10 +140,10 @@ def get_lowest_empty_row(board, col):
     # remember: board[0,0] is BOTTOM LEFT corner of the board
     column = board[:,col]
     # find first (lowest) row that is not occupied by a player
-    if np.argwhere(column==NO_PLAYER):
-        lowest_empty_row = np.argwhere(column==NO_PLAYER)[0]
+    if np.any(np.argwhere(column==NO_PLAYER)):
+        lowest_empty_row = int(np.argwhere(column==NO_PLAYER)[0])
     # careful: this returns a different data type!
-    else: lowest_empty_row = [] # no empty rows in this column
+    else: lowest_empty_row = -1 # no empty rows in this column
     return lowest_empty_row
 
 
@@ -161,11 +160,12 @@ def connected_four(board: np.ndarray, last_action: PlayerAction, player: BoardPi
     # take care of full rows -> last piece was placed in last row
     else: row_idx = -1 
     col_idx = last_action 
+
     # sufficient to check the one row, one column, and two diagonals which the last action affected!
-    if horizontal_win_check(board[row_idx], player): return True
-    if vertical_win_check(board[col_idx], player): return True
-    if diagonal_win_check(board, row_idx, col_idx, player): return True
-    return False
+    if horizontal_win_check(board[row_idx,:], player): return True
+    elif vertical_win_check(board[:,col_idx], player): return True
+    elif diagonal_win_check(board, row_idx, col_idx, player): return True
+    else: return False
 
 def horizontal_win_check(board_row, player: BoardPiece):
     for idx in range(len(board_row)-3):
@@ -190,9 +190,11 @@ def vertical_win_check(board_col, player: BoardPiece):
 def diagonal_win_check(board, row_idx, col_idx, player: BoardPiece):
     # only need to check two diagonals of given idx   
     # took me some time but works now and is clean
-    diagonal = np.diag(board, col_idx-row_idx)
-    # flip matrix and change sign of index 
-    anti_diagonal = np.diag(np.fliplr(board), row_idx-col_idx)
+    
+    diagonal = np.diag(board, int(col_idx-row_idx))
+    # flip matrix left/right and change column index accordingly 
+    # (i.e. column 0 needs to be adjusted to be the last column of the flipped matrix)
+    anti_diagonal = np.diag(np.fliplr(board), int((board.shape[1] - 1 - col_idx) - row_idx))
 
     if len(diagonal) < 4 :
         return False
@@ -242,5 +244,5 @@ def check_move_status(board: np.ndarray, column: Any) -> MoveStatus:
     if not isinstance(column, PlayerAction): return MoveStatus.WRONG_TYPE
     if column >= BOARD_COLS: return MoveStatus.OUT_OF_BOUNDS
     if column < 0: return MoveStatus.OUT_OF_BOUNDS
-    if get_lowest_empty_row(board, column) == []: return MoveStatus.FULL_COLUMN
-    
+    if get_lowest_empty_row(board, column) == -1: return MoveStatus.FULL_COLUMN
+    return MoveStatus.IS_VALID

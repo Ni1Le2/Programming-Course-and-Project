@@ -1,5 +1,11 @@
 import numpy as np
-# should later be in agents.game_utils?ä
+# should later be in agents.game_utils?
+import sys
+import os
+
+# Add the parent directory to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import game_utils as gu
 from game_utils import pretty_print_board, initialize_game_state, string_to_board, BOARD_SHAPE
 
