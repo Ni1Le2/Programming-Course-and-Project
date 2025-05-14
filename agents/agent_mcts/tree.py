@@ -1,10 +1,21 @@
 # from https://medium.com/pythoneers/getting-started-with-trees-in-python-a-beginners-guide-4e68818e7c05
-
+import numpy as np
+import game_utils as gu
+from typing import Optional
 
 class TreeNode:
-    def __init__(self, data):
-        self.data = data
+    def __init__(self, board: np.ndarray, 
+                 parent: Optional["TreeNode"]=None, 
+                 player: Optional[gu.BoardPiece]=None):
+        self.board = board
+        self.parent = []
         self.children = []
+        self.value = 0 # value of node, changed through simulation and backpropagation
+        self.wins = 0
+        self.visits = 0 # how often node has been visited
+        self.uct = 0
+        self.player = player
+        self.expaned_actions = []
 
     def add_child(self, child):
         self.children.append(child)

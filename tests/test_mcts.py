@@ -8,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from agents.agent_mcts.mcts import simulation
 from game_utils import initialize_game_state, pretty_print_board, PLAYER1, PLAYER2, PLAYER1_PRINT
 
-# this is not a "real/correct" test funciton, but it helped me check whether th
+# this is not a "real/correct" test funciton, but it helped me check whether the simulation works
 def test_single_simulation_run():
     board = initialize_game_state()
     win_value, move_count, result_board, last_action = simulation(board, PLAYER1, return_final_board=True)
@@ -41,3 +41,10 @@ def test_many_simulation_runs():
     std = np.sqrt(N)
 
     assert np.abs(total_win_count) <= 3*std
+
+
+def test_avoid_certain_defeat():
+    pass
+
+def test_achieve_certain_victory():
+    pass
