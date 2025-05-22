@@ -136,7 +136,10 @@ def apply_player_action(board: np.ndarray, action: PlayerAction, player: BoardPi
     # moves_made += 1 # would be nice for checking draws, maybe implement later
 
 
-def get_lowest_empty_row(board, col):
+def get_lowest_empty_row(board: np.ndarray, col: PlayerAction) -> int:
+    """
+    Returns the lowest empty row for the given column. Return -1 if the column is full.
+    """
     # remember: board[0,0] is BOTTOM LEFT corner of the board
     column = board[:,col]
     # find first (lowest) row that is not occupied by a player
@@ -167,7 +170,11 @@ def connected_four(board: np.ndarray, last_action: PlayerAction, player: BoardPi
     elif diagonal_win_check(board, row_idx, col_idx, player): return True
     else: return False
 
-def horizontal_win_check(board_row, player: BoardPiece):
+def horizontal_win_check(board_row: np.ndarray, player: BoardPiece) -> bool:
+    """
+    Returns True if a given row contains 4 adjacent pieces of the given player.
+    Otherwise, returns false. 
+    """
     for idx in range(len(board_row)-3):
         # look at 4 adjacent elements of the row
         four_elements_row = slice(idx, idx+4, 1)
@@ -177,7 +184,11 @@ def horizontal_win_check(board_row, player: BoardPiece):
     return False
 
 
-def vertical_win_check(board_col, player: BoardPiece):
+def vertical_win_check(board_col: np.ndarray, player: BoardPiece) -> bool:
+    """
+    Returns True if a given column contains 4 adjacent pieces of the given player.
+    Otherwise, returns false. 
+    """
     for idx in range(len(board_col)-3):
         # look at 4 adjacent elements of the column
         four_elements_col = slice(idx, idx+4, 1)
@@ -187,11 +198,16 @@ def vertical_win_check(board_col, player: BoardPiece):
     return False
 
 
-def diagonal_win_check(board, row_idx, col_idx, player: BoardPiece):
+def diagonal_win_check(board: np.ndarray, row_idx: int, col_idx: PlayerAction, 
+                       player: BoardPiece) -> bool:
+    """
+    Returns True if diagonal or antidiagonal of a give board element contain 
+    4 adjacent pieces of the given player. Otherwise, returns False.
+    """
     # only need to check two diagonals of given idx   
     # took me some time but works now and is clean
-    
     diagonal = np.diag(board, int(col_idx-row_idx))
+
     # flip matrix left/right and change column index accordingly 
     # (i.e. column 0 needs to be adjusted to be the last column of the flipped matrix)
     anti_diagonal = np.diag(np.fliplr(board), int((board.shape[1] - 1 - col_idx) - row_idx))
@@ -218,7 +234,6 @@ def is_draw(board) -> bool:
     """
     Game is played until the very end, i.e. a draw only occurs if all cells are filled.
     """
-    # not really necessary to pass player, but may still be helpful?
     if np.all(board!=0): return True
     return False
 

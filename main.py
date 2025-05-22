@@ -4,12 +4,12 @@ from game_utils import PLAYER1, PLAYER2, PLAYER1_PRINT, PLAYER2_PRINT, GameState
 from game_utils import initialize_game_state, pretty_print_board, apply_player_action, check_end_state, check_move_status
 from agents.agent_human_user import user_move
 from agents.agent_random import generate_move
-
-
+from agents.agent_mcts import generate_move_mcts
+import numpy as np
 
 def human_vs_agent(
     generate_move_1: GenMove,
-    generate_move_2: GenMove = generate_move,
+    generate_move_2: GenMove = generate_move_mcts,
     player_1: str = "Player 1",
     player_2: str = "Player 2",
     args_1: tuple = (),
@@ -43,6 +43,7 @@ def human_vs_agent(
                     board.copy(),  # copy board to be safe, even though agents shouldn't modify it
                     player, saved_state[player], *args
                 )
+
                 print(f'Move time: {time.time() - t0:.3f}s')
 
                 move_status = check_move_status(board, action)
@@ -54,6 +55,15 @@ def human_vs_agent(
 
                 apply_player_action(board, action, player)
                 end_state = check_end_state(board, action, player)
+
+                                
+                ### TESTING FOR SAVED_STATE, REMOVE LATER
+                if saved_state[PLAYER2]:
+                    print(board)
+                    print(saved_state[PLAYER2].player)
+                    for child in saved_state[PLAYER2].children:
+                        print(child.player)
+
 
                 if end_state != GameState.STILL_PLAYING:
                     print(pretty_print_board(board))

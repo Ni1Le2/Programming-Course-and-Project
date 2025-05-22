@@ -1,24 +1,31 @@
 # from https://medium.com/pythoneers/getting-started-with-trees-in-python-a-beginners-guide-4e68818e7c05
 import numpy as np
 import game_utils as gu
+import agents.agent_mcts.mcts as mcts
 from typing import Optional
 
 class TreeNode:
     def __init__(self, board: np.ndarray, 
-                 parent: Optional["TreeNode"]=None, 
-                 player: Optional[gu.BoardPiece]=None):
+                previous_action: Optional[gu.PlayerAction]=None,
+                parent: Optional["TreeNode"]=None, 
+                player: Optional[gu.BoardPiece]=None):
         self.board = board
-        self.parent = []
+        self.parent = parent
         self.children = []
         self.value = 0 # value of node, changed through simulation and backpropagation
         self.wins = 0
         self.visits = 0 # how often node has been visited
         self.uct = 0
         self.player = player
-        self.expaned_actions = []
+        self.previous_action = previous_action
+        self.expanded_actions = []
 
     def add_child(self, child):
         self.children.append(child)
+
+    def is_fully_expanded(self):
+        # make nicer later
+        return len(self.expanded_actions) >= len(mcts._get_all_valid_actions(self.board))
 
 
 # Create a function for insertion

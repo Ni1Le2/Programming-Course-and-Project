@@ -1,1 +1,1 @@
-from .mcts import generate_move_random as generate_move
+from .mcts import mcts as generate_move_mcts

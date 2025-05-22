@@ -5,8 +5,9 @@ import os
 # Add the parent directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from agents.agent_mcts.mcts import simulation
+from agents.agent_mcts.mcts import simulation, mcts
 from game_utils import initialize_game_state, pretty_print_board, PLAYER1, PLAYER2, PLAYER1_PRINT
+import game_utils as gu
 
 # this is not a "real/correct" test funciton, but it helped me check whether the simulation works
 def test_single_simulation_run():
@@ -39,12 +40,26 @@ def test_many_simulation_runs():
     # we want to be withing 3*stdv of the expected value (=0) which contains >99% of possible values
     # we can still be outside this range by chance, but it is very unlikely!
     std = np.sqrt(N)
-
     assert np.abs(total_win_count) <= 3*std
 
 
 def test_avoid_certain_defeat():
-    pass
+    board = initialize_game_state()
+    player = PLAYER2
+    col_idx = 3
+    board[:, col_idx] = [1,1,1,0,0,0]
+    action, _ = mcts(board, player, saved_state=None)
+    gu.apply_player_action(board, action, player)
+    control_column = [1,1,1,2,0,0]
+    assert np.all(board[:, col_idx] == control_column), "certain defeat not averted, possibly (but unprobable) due to chance"
+
 
 def test_achieve_certain_victory():
-    pass
+    board = initialize_game_state()
+    player = PLAYER1
+    col_idx = 3
+    board[:, col_idx] = [1,1,1,0,0,0]
+    action, _ = mcts(board, player, saved_state=None)
+    gu.apply_player_action(board, action, player)
+    assert gu.check_end_state(board, player, action), "certain victory not attained, possibly (but unprobable) due to chance"
+
