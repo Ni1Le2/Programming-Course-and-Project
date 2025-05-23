@@ -101,6 +101,12 @@ def test_diagonal_win_check():
         board[idx,idx] = 1
     assert gu.diagonal_win_check(board, 2, 2, gu.PLAYER1)
 
+def test_anti_diagonal_win_check():
+    board = gu.initialize_game_state()
+    for idx in range(gu.BOARD_ROWS):
+        board[idx,gu.BOARD_COLS-1-idx] = 1
+    assert gu.diagonal_win_check(board, row_idx=0, col_idx=gu.BOARD_COLS-1, player=gu.PLAYER1)
+
 def test_if_game_is_drawn():
     # creates a nice 1-2-1-2 board, the perfect draw :)
     board = gu.initialize_game_state()

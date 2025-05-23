@@ -190,10 +190,8 @@ def vertical_win_check(board_col: np.ndarray, player: BoardPiece) -> bool:
     Otherwise, returns false. 
     """
     for idx in range(len(board_col)-3):
-        # look at 4 adjacent elements of the column
-        four_elements_col = slice(idx, idx+4, 1)
         # player (int) decides compared array
-        if np.all(board_col[four_elements_col]==np.ones((4))*player):
+        if np.all(board_col[idx:idx+4]==player):
             return True
     return False
 
@@ -210,23 +208,24 @@ def diagonal_win_check(board: np.ndarray, row_idx: int, col_idx: PlayerAction,
 
     # flip matrix left/right and change column index accordingly 
     # (i.e. column 0 needs to be adjusted to be the last column of the flipped matrix)
-    anti_diagonal = np.diag(np.fliplr(board), int((board.shape[1] - 1 - col_idx) - row_idx))
+    flipped_board = np.fliplr(board)
+    flipped_row_idx = row_idx # no change due to fliplr
+    flipped_col_idx = board.shape[1]-1-col_idx
+    anti_diagonal = np.diag(flipped_board, int(flipped_col_idx-flipped_row_idx))
 
-    if len(diagonal) < 4 :
-        return False
-    if len(anti_diagonal) < 4:
-        return False
     
-    # look at all elements from idx to idx+3 for the diagonal
-    for idx in range(len(diagonal)-3):
-        four_elements_diag = slice(idx, idx+4, 1)
-        if np.all(diagonal[four_elements_diag]==np.ones((4))*player):
-            return True
-    # look at all elements from idx to idx+3 for the anit-diagonal
-    for idx in range(len(anti_diagonal)-3):
-        four_elements_diag = slice(idx, idx+4, 1)
-        if np.all(anti_diagonal[four_elements_diag]==np.ones((4))*player):
-            return True   
+    if len(diagonal) >= 4:
+        # look at all elements from idx to idx+3 for the diagonal
+        for idx in range(len(diagonal)-3):
+            four_elements_diag = slice(idx, idx+4, 1)
+            if np.all(diagonal[four_elements_diag]==np.ones((4))*player):
+                return True
+    if len(anti_diagonal) >= 4:
+        # look at all elements from idx to idx+3 for the anit-diagonal
+        for idx in range(len(anti_diagonal)-3):
+            four_elements_diag = slice(idx, idx+4, 1)
+            if np.all(anti_diagonal[four_elements_diag]==np.ones((4))*player):
+                return True   
     return False
 
 
@@ -261,3 +260,14 @@ def check_move_status(board: np.ndarray, column: Any) -> MoveStatus:
     if column < 0: return MoveStatus.OUT_OF_BOUNDS
     if get_lowest_empty_row(board, column) == -1: return MoveStatus.FULL_COLUMN
     return MoveStatus.IS_VALID
+
+
+def update_saved_state (saved_state, action: PlayerAction):
+    """
+    Update saved_state based on (opponents) last action to improve runtime of the agent. 
+    If the player is not an agent, saved_state must be None and None will be returned.
+    """
+    if not saved_state: return None # saved state only for agents/nodes
+    for child in saved_state.children:
+        if child.previous_action == action:
+            return child

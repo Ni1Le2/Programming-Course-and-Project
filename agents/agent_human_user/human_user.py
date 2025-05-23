@@ -10,7 +10,7 @@ def query_user(prompt_function: Callable) -> Any:
 
 
 def user_move(board: np.ndarray,
-              _player: BoardPiece,
+              player: BoardPiece,
               saved_state: SavedState | None) -> tuple[PlayerAction, SavedState | None]:
     move_status = None
     while move_status != MoveStatus.IS_VALID:

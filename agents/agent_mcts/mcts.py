@@ -24,29 +24,39 @@ from agents.agent_mcts.tree import *
 # - for lower levels we can probably decrease the number of simulations per expansion 
 # - we want to store the tree so that we can reuse the relevant branches that the game actually followed
 
-def mcts(board: np.ndarray, player: gu.BoardPiece, 
-         saved_state: SavedState | None, iterations=1500) -> PlayerAction: 
+def mcts(board: np.ndarray, 
+         player: gu.BoardPiece, 
+         saved_state: SavedState | None, 
+         iterations=4000,
+         max_depth = np.inf
+         ) -> tuple[PlayerAction, SavedState]: 
     """
     
     """
-    # IMPLEMENT IF SAVED_STATE:
-    if saved_state: pass
-    root = TreeNode(board, player=player)
-    for i in range(iterations):
+    # player of root is the opponent, NOT the player passed inside function call
+    prev_player = BoardPiece(1 + (2 - player)) 
+    
+    if saved_state: root = saved_state
+    else: root = TreeNode(board, player=prev_player)
+    num_visits = root.visits 
+
+    for i in range(iterations-num_visits): # reduce number of iterations using saved node
         selected_node = selection(root)
         expanded_node = expansion(selected_node)
         # also returns move count, maybe useful later
-        simulation_results, _ = simulation(expanded_node)
+        simulation_results, _ = simulation(expanded_node, max_simulation_depth=max_depth)
         backpropagation(expanded_node, simulation_results)
     
-    # Final selection based on highest number of visits
+    # if any of the childs lead certain victory we should always select it
+    for child in root.children:
+        if check_end_state(child.board, child.previous_action, player) == GameState.IS_WIN:
+            return child.previous_action, child
+        
+    # Currently selecting based on number of visits; 
+    # consider switching to win numbe (c.wins) or win rate (c.wins / c.visits)
     best_child = max(root.children, key=lambda c: c.visits)
     
-    best_action = best_child.previous_action
-    # save the relevant part of the tree
-    saved_state = best_child
-
-    return best_action, saved_state
+    return best_child.previous_action, best_child
 
 
 def selection(node: TreeNode) -> TreeNode:
@@ -93,11 +103,10 @@ def expansion(node: TreeNode) -> TreeNode:
     '''
     Create new unexplored child node and returns it. 
     '''
-    saved_state = {PLAYER1: None, PLAYER2: None}
     board = node.board.copy()
     # determine child player based on parent player
     # two player game, Player1 = 1, Player2 = 2 
-    child_player = BoardPiece(1 + (2 - node.player))    
+    child_player = BoardPiece(3 - node.player)   
 
     action = generate_random_move(
         board, 
@@ -110,19 +119,20 @@ def expansion(node: TreeNode) -> TreeNode:
     return child
 
 
-def simulation(node:  np.ndarray, return_final_board=False, max_simulation_depth=np.inf):
+def simulation(node: TreeNode, max_simulation_depth=np.inf):
     '''
     Randomly simulate moves on a given game board (node) until game ends.
     Returns who won (and maybe number of steps it took?): Win: 1, Loss: -1, Draw: 0.
 
     Parameters
     ----------
+    node: TreeNode
+        Starting node for simulation.
+        
     max_simulation_depth: float, default: np.inf
         Controls maximum amount of future steps in simulation (depth).
         Can be set to avoid long (mostly drawn out) games.
     '''
-
-    saved_state = {PLAYER1: None, PLAYER2: None}
     starting_player = current_player = node.player
     board = node.board.copy()
     simulating = True
@@ -152,12 +162,9 @@ def simulation(node:  np.ndarray, return_final_board=False, max_simulation_depth
             simulating = False
             break
         # change player before next move
-        current_player = gu.BoardPiece(2+(1-current_player))
+        current_player = gu.BoardPiece(3-current_player)
         move_count += 1
-    
-    if return_final_board: # for testing
-        return win_value, move_count, board, action
-    else: return win_value, move_count
+    return win_value, move_count
 
 
 def backpropagation(node: TreeNode, value: float):

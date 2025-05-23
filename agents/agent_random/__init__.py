@@ -1,1 +1,1 @@
-from .random import generate_move_random as generate_move
+from .random import generate_move_random as generate_move_random
