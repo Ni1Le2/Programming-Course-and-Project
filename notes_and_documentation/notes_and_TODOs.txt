@@ -1,0 +1,27 @@
+Notes on agent:
+- implement and test reduced depth for 
+    a) performance: how fast can we get
+    b) results: how good is agent
+
+- check other "best-child-selections"
+- check agent vs. agent mode: 
+    - agent 1 seems to win suspiciously often, for both starting and not starting
+    - only tested for few runs as it takes quite long
+    - no obvious errors
+    - one potential error: player 2 makes best move from perspective of player 1 (which in most
+      cases will not be a terrible move but what will also not win games)
+    - so far I checked the code and can see no indication of such error; check again later 
+
+- 
+
+
+#############
+TODOs:
+- add test functions for final/current code 
+- clean up code (variable & function names, logic checks, general "cleanliness", clean up imports)
+- documentation:
+    - funciton documentations as required (see slides)
+    - general comments: remove/check for unnecessary comments, add comments where useful
+- write README file (first draft at least)
+- update gitignore file to ignore unnecessary files
+- add requirements fie?
