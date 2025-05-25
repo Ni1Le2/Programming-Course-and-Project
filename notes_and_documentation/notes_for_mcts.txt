@@ -1,0 +1,46 @@
+How it works:
+
+# https://www.youtube.com/watch?v=Fbs4lnGLS8M
+# https://www.geeksforgeeks.org/ml-monte-carlo-tree-search-mcts/
+# https://www.youtube.com/watch?v=ghhznqBoESY
+
+# keep in mind:
+# - root is the current game state corresponding to the opponent's last move
+# - first level children coorespond the agent's moves
+# - second level children correspond to possible opponents moves (and count opponent's wins)
+# - and so on for ensuing levels
+# - selection using uct score: exploitation vs. exploration
+# - fixed number of iterations (1000-5000 should be reasonable)
+
+# general procedure:
+# start with root (=board) 
+# -> selected node (root at starts) -> expand root (create child using valid action)
+# -> simulate randomly until the end -> check who won -> update and backpropagate update (wins, values, and visits) 
+# select next node -> ... (do <iterations> times)
+# -> select most "promising" child using number of visits 
+# (other options can be considered, but win count seems to be the most widely used)
+
+# notes:
+# - we want to store the tree so that we can reuse the relevant branches that the game actually followed -> saved state
+# - it might be interesting to incorporate the move count into the win_value: 
+#   -> are fast (random) losses "worse" than slow (random) losses? (somewhat of a heuristic)
+
+
+
+Further notes/ideas:
+- implement and test reduced depth for 
+    a) performance: how fast can we get
+    b) results: how good is agent
+
+- check other "best-child-selections"
+- check agent vs. agent mode: 
+    - agent 1 seems to win suspiciously often, for both starting and not starting
+    - only tested for few runs as it takes quite long
+    - no obvious errors
+    - one potential error: player 2 makes best move from perspective of player 1 (which in most
+      cases will not be a terrible move but what will also not win games)
+    - so far I checked the code and can see no indication of such error; check again later 
+
+
+
+

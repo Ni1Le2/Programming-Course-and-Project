@@ -1,1 +1,1 @@
-from .mcts import mcts as generate_move_mcts
+from .mcts import generate_move_mcts as generate_move_mcts

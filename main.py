@@ -59,14 +59,9 @@ def play(
                 print(
                     f'{player_name} you are playing with {PLAYER1_PRINT if player == PLAYER1 else PLAYER2_PRINT}'
                 )
-                
-                # idea: 
-                # saved_state of each player is the board (as a node with all children) 
-                # after the last move they made.
-                # Opponent makes move (action) based on which we update the saved state 
-                # (i.e. select appropriate child or update board)
 
-                if saved_state[player]: # does this work for None?
+                # update saved state of player with previous action of opponent
+                if saved_state[player]:
                     saved_state[player] = update_saved_state(saved_state[player], action)
 
                 action, saved_state[player] = gen_move(

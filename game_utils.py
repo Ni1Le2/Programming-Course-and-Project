@@ -1,27 +1,31 @@
-# The game_utils module is going to contain code of general relevance
-# for playing the game and for the agents you will implement.
-
-from typing import Callable, Optional, Any
+from typing import Callable, Optional, TYPE_CHECKING
 from enum import Enum
 import numpy as np
 
+# avoid circular imports (only needed for type checking)
+if TYPE_CHECKING:
+    from agents.agent_mcts.tree import TreeNode
+
+# board dimensions
 BOARD_ROWS = 6
 BOARD_COLS = 7
-BOARD_SHAPE = (6, 7)
-INDEX_HIGHEST_ROW = BOARD_ROWS - 1
-INDEX_LOWEST_ROW = 0
+BOARD_SHAPE = (BOARD_ROWS, BOARD_COLS)
 
-BoardPiece = np.int8  # The data type (dtype) of the board pieces
-NO_PLAYER = BoardPiece(0)  # board[i, j] == NO_PLAYER where the position is empty
-PLAYER1 = BoardPiece(1)  # board[i, j] == PLAYER1 where player 1 (player to move first) has a piece
-PLAYER2 = BoardPiece(2)  # board[i, j] == PLAYER2 where player 2 (player to move second) has a piece
+BoardPiece = np.int8  # data type (dtype) of the board pieces
+NO_PLAYER = BoardPiece(0) 
+PLAYER1 = BoardPiece(1) 
+PLAYER2 = BoardPiece(2) 
 
 BoardPiecePrint = str  # dtype for string representation of BoardPiece
 NO_PLAYER_PRINT = BoardPiecePrint(' ')
 PLAYER1_PRINT = BoardPiecePrint('X')
 PLAYER2_PRINT = BoardPiecePrint('O')
 
-PlayerAction = np.int8  # The column to be played
+PlayerAction = np.int8  # column (=action) to be played
+
+# NOTE: maybe consider a class for this later to extend functionality?
+# for now: SavedState is just a TreeNode (for agent) or None (for human player)
+SavedState = Optional["TreeNode"]
 
 class GameState(Enum):
     IS_WIN = 1
@@ -34,35 +38,57 @@ class MoveStatus(Enum):
     OUT_OF_BOUNDS = 'Input is out of bounds.'
     FULL_COLUMN = 'Selected column is full.'
 
-class SavedState:
-    pass
 
+# generator move function type
 GenMove = Callable[
-    [np.ndarray, BoardPiece, Optional[SavedState]],  # Arguments for the generate_move function
-    tuple[PlayerAction, Optional[SavedState]]  # Return type of the generate_move function
+    [np.ndarray, BoardPiece, SavedState],  # Arguments for the generate_move function
+    tuple[PlayerAction, SavedState]  # Return type of the generate_move function
 ]
 
 
 def initialize_game_state() -> np.ndarray:
     """
-    Returns an ndarray, shape BOARD_SHAPE and data type (dtype) BoardPiece, initialized to 0 (NO_PLAYER).
+    Initialize and return a new empty game board.
+
+    The board is an ndarray of shape (BOARD_ROWS, BOARD_COLS) and dtype BoardPiece,
+    where all positions are set to 0 (NO_PLAYER).
+
+    Returns
+    -------
+    board : np.ndarray
+        An empty game board.
     """
-    return np.zeros((BOARD_ROWS, BOARD_COLS), dtype=BoardPiece)
+    return np.zeros(BOARD_SHAPE, dtype=BoardPiece)
     
-def create_random_game_state() -> np.ndarray:
+def create_random_game_state(full_board: bool = False) -> np.ndarray:
     """
-    Returns an ndarray, shape BOARD_SHAPE and data type (dtype) BoardPiece, initialized to 0 (NO_PLAYER).
-    Useful for testing.
+    Create and return a randomly filled game board.
+
+    The board is an ndarray of shape (BOARD_ROWS, BOARD_COLS) and dtype BoardPiece,
+    where each position is randomly assigned to NO_PLAYER (0), PLAYER1 (1), or PLAYER2 (2).
+
+    Parameters
+    ----------
+    full_board : bool, optional
+        Can be used to create a full random board. Default is False.
+
+    Returns
+    -------
+    board : np.ndarray
+        A randomly initialized game board, useful for testing.
     """
-    return np.random.randint(0,3, size=BOARD_SHAPE)
+    if full_board:
+        return np.random.randint(1, 3, size=BOARD_SHAPE, dtype=BoardPiece)
+    else:
+        return np.random.randint(0, 3, size=BOARD_SHAPE, dtype=BoardPiece)
 
 def pretty_print_board(board: np.ndarray) -> str:
     """
-    Should return `board` converted to a human readable string representation,
-    to be used when playing or printing diagnostics to the console (stdout). The piece in
-    board[0, 0] of the array should appear in the lower-left in the printed string representation. 
-    Here's an example output, note that we use PLAYER1_Print to represent PLAYER1 and 
-    PLAYER2_Print to represent PLAYER2):
+    Convert the game board to a human-readable string representation.
+
+    The piece in board[0, 0] of the array should appear in the lower-left of the
+    printed string representation. Here's an example output:
+
     |==============|
     |              |
     |              |
@@ -72,202 +98,288 @@ def pretty_print_board(board: np.ndarray) -> str:
     |  O O X X     |
     |==============|
     |0 1 2 3 4 5 6 |
+
+    Parameters
+    ----------
+    board : np.ndarray
+        The game board as a 2D array.
+
+    Returns
+    -------
+    str
+        The formatted string representation of the board.
     """
 
-    pretty_board = ""
-    
-    # top border row
-    pretty_board += "|==============|\n"
+    pretty_board = []
+    pretty_board.append("|==============|") # top border row
 
-    # board[0,0] should appear in lower left, so 0th row should be displayed at the bottom,
-    # 0th col should be displayed at the front
-    # -> flip board matrix upside down
+    # 0th row of board should be displayed at the bottom
     for r_i, row in enumerate(np.flipud(board)):
-        pretty_board += "|"
-
-        # each row will contain only integers: 0: no player, 1/2: player 1/2
-        for element in row:
-            if element == NO_PLAYER:
-                pretty_board += NO_PLAYER_PRINT + " "
-            if element == PLAYER1:
-                pretty_board += PLAYER1_PRINT + " "
-            if element == PLAYER2:
-                pretty_board += PLAYER2_PRINT + " "
-        pretty_board += "|\n"
+        row_str = create_pretty_row_str(row)
+        pretty_board.append(row_str)
     
-    # bottom border row
-    pretty_board += "|==============|\n"
+    pretty_board.append("|==============|") # bottom border row
 
-    # row with number indices
-    pretty_board += "|"
-    for c_i in range(BOARD_COLS):
-        pretty_board += str(c_i) + " "
-    pretty_board += "|"
-    return pretty_board
+    # add column indices at bottom
+    index_row = "|" + " ".join(str(c) for c in range(BOARD_COLS)) + " |"
+    pretty_board.append(index_row)
+
+    return "\n".join(pretty_board)
+
+
+def create_pretty_row_str(row: np.ndarray) -> str:
+    """Create a string representation of a single row of the game board."""
+    row_str = "|"
+
+    # each row will contain only integers: 0: no player, 1: player 1, 2: player 2
+    for element in row:
+        if element == NO_PLAYER:
+            row_str += NO_PLAYER_PRINT + " "
+        if element == PLAYER1:
+            row_str += PLAYER1_PRINT + " "
+        if element == PLAYER2:
+            row_str += PLAYER2_PRINT + " "
+    row_str += "|"
+    return row_str
+
 
 def string_to_board(pp_board: str) -> np.ndarray:
     """
-    Takes the output of pretty_print_board and turns it back into an ndarray.
-    This is quite useful for debugging, when the agent crashed and you have the last
-    board state as a string.
+    Convert a string representation of the board (as produced by pretty_print_board)
+    back into a NumPy ndarray representing the game board state.
+
+    This is useful for debugging when you have the board as a string and want to
+    reconstruct the ndarray.
+
+    Parameters
+    ----------
+    pp_board : str
+        A formatted string representation of the board.
+
+    Returns
+    -------
+    np.ndarray
+        The game board as a 2D array.
     """
-    # extract rows from board
+    # split the string into rows, ignoring borders and indices
     board_rows = pp_board.split("|\n|")[1:-2]
-    board = np.empty((BOARD_SHAPE))
+
+    board = np.empty(BOARD_SHAPE, dtype=BoardPiece)
+
+    char_to_int = {
+        " ": NO_PLAYER,
+        "X": PLAYER1,
+        "O": PLAYER2
+    }
+    
     for row_idx, row in enumerate(board_rows):
-        # slice every second character as they are spaces for display
-        slice_idx = slice(0, len(row), 2)
-        row_string = row[slice_idx]
-        # use dict to extract numbers from string
-        char_to_int = {" ": NO_PLAYER, "X": PLAYER1, "O": PLAYER2}
-        row_int = [char_to_int[char] for char in row_string]
+        # take every second character (skip spaces)
+        row_chars = row[::2]
+        row_int = [char_to_int[char] for char in row_chars]
         board[row_idx] = row_int
+
     return board
 
 
-def apply_player_action(board: np.ndarray, action: PlayerAction, player: BoardPiece):
+def apply_player_action(board: np.ndarray, action: PlayerAction, player: BoardPiece) -> None:
     """
-    Sets board[i, action] = player, where i is the lowest open row. The input 
-    board should be modified in place, such that it's not necessary to return 
-    something.
+    Apply a player's action to the board by placing their piece in the lowest empty row of the specified column.
+    
+    Parameters
+    ----------
+    board : np.ndarray
+        The game board array to be modified in place.
+    action : PlayerAction
+        The column index where the player wants to place their piece.
+    player : BoardPiece
+        The player’s piece identifier.
+    
+    Notes
+    -----
+    The board is modified in place.
     """
     lowest_empty_row = get_lowest_empty_row(board, action)
     board[lowest_empty_row, action] = player
-    # moves_made += 1 # would be nice for checking draws, maybe implement later
 
 
 def get_lowest_empty_row(board: np.ndarray, col: PlayerAction) -> int:
     """
-    Returns the lowest empty row for the given column. Return -1 if the column is full.
+    Returns the lowest empty row in the specified column of the board. 
+    Return -1 if the column is full.
     """
-    # remember: board[0,0] is BOTTOM LEFT corner of the board
-    column = board[:,col]
-    # find first (lowest) row that is not occupied by a player
-    if np.any(np.argwhere(column==NO_PLAYER)):
-        lowest_empty_row = int(np.argwhere(column==NO_PLAYER)[0])
-    # careful: this returns a different data type!
-    else: lowest_empty_row = -1 # no empty rows in this column
-    return lowest_empty_row
+    column = board[:, col]
+    empty_rows = np.where(column == NO_PLAYER)[0]
+    if empty_rows.size > 0:
+        return int(empty_rows[0])
+    else:
+        return -1
 
 
 def connected_four(board: np.ndarray, last_action: PlayerAction, player: BoardPiece) -> bool:
     """
-    Returns True if the last action of the player resulted in four adjacent pieces 
-    equal to `player` arranged in either a horizontal, vertical, or diagonal line. 
-    Returns False otherwise.
+    Check whether the last action by the given player resulted in four 
+    connected pieces in a row, column, or diagonal.
+
+    Parameters
+    ----------
+    board : np.ndarray
+        The current state of the game board.
+    last_action : PlayerAction
+        The column index of the last move.
+    player : BoardPiece
+        The player who made the last move.
+
+    Returns
+    -------
+    bool
+        True if the last move resulted in four connected pieces, False otherwise.
     """
-    # lowest_empty_row -1 as we want the index of the PREVIOUS action
+    row_idx = get_lowest_empty_row(board, last_action) - 1  # row index of the PREVIOUSLY (-> -1) placed piece 
+    col_idx = last_action
     
-    if get_lowest_empty_row(board, last_action):
-        row_idx = get_lowest_empty_row(board, last_action)-1
-    # take care of full rows -> last piece was placed in last row
-    else: row_idx = -1 
-    col_idx = last_action 
+    # check invalid row_idx
+    if row_idx >= BOARD_ROWS:
+        raise ValueError(f"Invalid row index computed: {row_idx}. Check last_action and board state.")
 
-    # sufficient to check the one row, one column, and two diagonals which the last action affected!
-    if horizontal_win_check(board[row_idx,:], player): return True
-    elif vertical_win_check(board[:,col_idx], player): return True
-    elif diagonal_win_check(board, row_idx, col_idx, player): return True
-    else: return False
+    diagonal, anti_diagonal = extract_diagonals(board, row_idx, col_idx)
 
-def horizontal_win_check(board_row: np.ndarray, player: BoardPiece) -> bool:
+    if four_connected_pieces(board[row_idx,:], player): 
+        return True # check horizontal (row)
+    if four_connected_pieces(board[:,col_idx], player): 
+        return True # check vertical (col)
+    if len(diagonal) >= 4 and four_connected_pieces(diagonal, player): 
+            return True # check diagonal
+    if len(anti_diagonal) >= 4 and four_connected_pieces(anti_diagonal, player): 
+            return True # check anti_diagonal 
+
+    return False
+
+def four_connected_pieces(array: np.ndarray, player: BoardPiece) -> bool:
     """
-    Returns True if a given row contains 4 adjacent pieces of the given player.
-    Otherwise, returns false. 
+    Returns True if a given array contains four adjacent pieces of the given player.
+    Otherwise, returns False. 
     """
-    for idx in range(len(board_row)-3):
-        # look at 4 adjacent elements of the row
-        four_elements_row = slice(idx, idx+4, 1)
-        # player (int) decides compared array
-        if np.all(board_row[four_elements_row]==np.ones((4))*player):
+    for idx in range(len(array)-3):
+        four_elements_row = array[idx:idx+4]
+        # check if all 4 array elements belong to same player
+        if np.all(four_elements_row==player):
             return True
     return False
 
 
-def vertical_win_check(board_col: np.ndarray, player: BoardPiece) -> bool:
+def extract_diagonals(
+    board: np.ndarray, 
+    row_idx: int, 
+    col_idx: PlayerAction
+) -> tuple[np.ndarray, np.ndarray]:
     """
-    Returns True if a given column contains 4 adjacent pieces of the given player.
-    Otherwise, returns false. 
-    """
-    for idx in range(len(board_col)-3):
-        # player (int) decides compared array
-        if np.all(board_col[idx:idx+4]==player):
-            return True
-    return False
+    Extract the diagonal and anti-diagonal passing through a given element 
+    (row_idx, col_idx) in the board.
 
+    Parameters
+    ----------
+    board : np.ndarray
+        The current state of the game board.
+    row_idx : int
+        Row index of the cell.
+    col_idx : PlayerAction
+        Column index of the cell.
 
-def diagonal_win_check(board: np.ndarray, row_idx: int, col_idx: PlayerAction, 
-                       player: BoardPiece) -> bool:
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        - diagonal: The main diagonal containing the cell.
+        - anti_diagonal: The anti-diagonal containing the cell.
     """
-    Returns True if diagonal or antidiagonal of a give board element contain 
-    4 adjacent pieces of the given player. Otherwise, returns False.
-    """
-    # only need to check two diagonals of given idx   
-    # took me some time but works now and is clean
+    # diagonal (top-left to bottom-right) of given idxs  
     diagonal = np.diag(board, int(col_idx-row_idx))
 
-    # flip matrix left/right and change column index accordingly 
-    # (i.e. column 0 needs to be adjusted to be the last column of the flipped matrix)
+    # anti-diagonal (top-right to bottom-left) of given idxs
     flipped_board = np.fliplr(board)
-    flipped_row_idx = row_idx # no change due to fliplr
-    flipped_col_idx = board.shape[1]-1-col_idx
-    anti_diagonal = np.diag(flipped_board, int(flipped_col_idx-flipped_row_idx))
+    flipped_col_idx = board.shape[1]-1-col_idx # adjust col idx to match flipped board
+    anti_diagonal = np.diag(flipped_board, int(flipped_col_idx-row_idx))
+    return diagonal, anti_diagonal
 
-    
-    if len(diagonal) >= 4:
-        # look at all elements from idx to idx+3 for the diagonal
-        for idx in range(len(diagonal)-3):
-            four_elements_diag = slice(idx, idx+4, 1)
-            if np.all(diagonal[four_elements_diag]==np.ones((4))*player):
-                return True
-    if len(anti_diagonal) >= 4:
-        # look at all elements from idx to idx+3 for the anit-diagonal
-        for idx in range(len(anti_diagonal)-3):
-            four_elements_diag = slice(idx, idx+4, 1)
-            if np.all(anti_diagonal[four_elements_diag]==np.ones((4))*player):
-                return True   
+
+def is_full(board: np.ndarray) -> bool:
+    """
+    Returns True if the given board is fully occupied (no empty spaces),
+    otherwise returns False.
+    """
+    if np.all(board!=NO_PLAYER): return True
     return False
 
-
-def is_draw(board) -> bool:
-    """
-    Game is played until the very end, i.e. a draw only occurs if all cells are filled.
-    """
-    if np.all(board!=0): return True
-    return False
 
 def check_end_state(board: np.ndarray, player: BoardPiece, last_action: PlayerAction) -> GameState:
     """
-    Returns the current game state for the current `player`, i.e. has their last
-    action won (GameState.IS_WIN) or drawn (GameState.IS_DRAW) the game,
-    or is play still on-going (GameState.STILL_PLAYING)?
+    Determines the current game state after the given player's last action.
+
+    Parameters
+    ----------
+    board : np.ndarray
+        The current state of the game board.
+    player : BoardPiece
+        The player who made the last action.
+    last_action : PlayerAction
+        The last action of the player that led to the current state of the board.
+
+    Returns
+    -------
+    GameState
+        - GameState.IS_WIN if the player has connected four,
+        - GameState.IS_DRAW if the board is full,
+        - GameState.STILL_PLAYING otherwise.
     """
     if connected_four(board, player, last_action): return GameState.IS_WIN
-    if is_draw(board): return GameState.IS_DRAW
+    elif is_full(board): return GameState.IS_DRAW
     return GameState.STILL_PLAYING
 
 
-def check_move_status(board: np.ndarray, column: Any) -> MoveStatus:
+def check_move_status(board: np.ndarray, action: PlayerAction) -> MoveStatus:
     """
-    Returns a MoveStatus indicating whether a move is accepted as a valid move 
-    or not, and if not, why.
-    The provided column must be of the correct type (PlayerAction).
-    Furthermore, the column must be within the bounds of the board and the
-    column must not be full.
+    Determines whether a move is valid and, if not, why.
+
+    Parameters
+    ----------
+    board : np.ndarray
+        The current game board.
+    action : PlayerAction
+        The column index of the move.
+
+    Returns
+    -------
+    MoveStatus
+        - MoveStatus.IS_VALID if the move is valid.
+        - MoveStatus.WRONG_TYPE if the column type is incorrect.
+        - MoveStatus.OUT_OF_BOUNDS if the column index is out of range.
+        - MoveStatus.FULL_COLUMN if the column is already full.
     """
-    if not isinstance(column, PlayerAction): return MoveStatus.WRONG_TYPE
-    if column >= BOARD_COLS: return MoveStatus.OUT_OF_BOUNDS
-    if column < 0: return MoveStatus.OUT_OF_BOUNDS
-    if get_lowest_empty_row(board, column) == -1: return MoveStatus.FULL_COLUMN
+    if not isinstance(action, PlayerAction): return MoveStatus.WRONG_TYPE
+    if action >= BOARD_COLS: return MoveStatus.OUT_OF_BOUNDS
+    if action < 0: return MoveStatus.OUT_OF_BOUNDS
+    if get_lowest_empty_row(board, action) == -1: return MoveStatus.FULL_COLUMN
     return MoveStatus.IS_VALID
 
 
-def update_saved_state (saved_state, action: PlayerAction):
+
+def update_saved_state (saved_state: Optional["TreeNode"], action: PlayerAction):
     """
-    Update saved_state based on (opponents) last action to improve runtime of the agent. 
-    If the player is not an agent, saved_state must be None and None will be returned.
+    Updates the saved_state (TreeNode) based on the given action, or returns None if no state is tracked.
+    
+    Parameters
+    ----------
+    saved_state : Optional[TreeNode]
+        The current node of the search tree, if the player is an agent using a search tree.
+    action : PlayerAction
+        The action that was just played.
+    
+    Returns
+    -------
+    Optional[TreeNode]
+        The updated TreeNode corresponding to the played action,
+        or None if no search tree is used (e.g., human player).
     """
-    if not saved_state: return None # saved state only for agents/nodes
+    if not saved_state: return None # saved state only for TreeNodes
     for child in saved_state.children:
         if child.previous_action == action:
             return child
