@@ -1,3 +1,5 @@
+(overview for myself, not relevant for submission/prototype)
+
 - topic: implement agents for connect 4
     - 2 players, turn-based, perfect informaton
     - phase 1: minmax/MCTS agent - individual (prototype, after ~ 5 weeks, ~May 19th)

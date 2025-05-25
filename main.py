@@ -1,11 +1,13 @@
 from typing import Callable
 import time
-from game_utils import PLAYER1, PLAYER2, PLAYER1_PRINT, PLAYER2_PRINT, GameState, MoveStatus, GenMove, BoardPiece
-from game_utils import initialize_game_state, pretty_print_board, apply_player_action, update_saved_state, check_end_state, check_move_status
+
+from game_utils import (
+    PLAYER1, PLAYER2, PLAYER1_PRINT, PLAYER2_PRINT, GameState, MoveStatus, GenMove,
+    initialize_game_state, pretty_print_board, apply_player_action, update_saved_state, check_end_state, check_move_status
+)
 from agents.agent_human_user import user_move
 from agents.agent_random import generate_move_random
 from agents.agent_mcts import generate_move_mcts
-import numpy as np
 
 def play(
     mode = None,
@@ -17,6 +19,29 @@ def play(
     init_2: Callable = lambda board, player: None,
 ):
     """
+    Start and control a game of Connect Four between two players.
+
+    Parameters
+    ----------
+    mode : Optional
+        The game mode to be used.
+    player_1 : str
+        Name of player 1.
+    player_2 : str
+        Name of player 2.
+    args_1 : tuple
+        Additional arguments to pass to player 1's move generator.
+    args_2 : tuple
+        Additional arguments to pass to player 2's move generator.
+    init_1 : Callable
+        Function to initialize player 1's state.
+    init_2 : Callable
+        Function to initialize player 2's state.
+
+    Returns
+    -------
+    None
+        The function runs until the game is over, with no explicit return value.
     """
     if mode == None:
         mode = int(input("Select mode:  \n 0 = player vs. player \n 1 = player vs. agent \n 2 = agent vs. agent \n 3 = agent vs. random agent \n"))
@@ -31,8 +56,8 @@ def play(
         generate_move_1: GenMove = generate_move_mcts
         generate_move_2: GenMove = generate_move_mcts
     elif mode == 3: # agent vs. random_agent
-        generate_move_1: GenMove = generate_move_random
-        generate_move_2: GenMove = generate_move_mcts
+        generate_move_1: GenMove = generate_move_mcts
+        generate_move_2: GenMove = generate_move_random
     else:
         raise ValueError("Incorret mode selected. Please select valid mode (0, 1, 2, or 3)")
         

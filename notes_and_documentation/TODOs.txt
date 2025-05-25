@@ -1,11 +1,5 @@
 TODOs:
-- add test functions for final/current code 
-- clean up code (variable & function names, logic checks, general "cleanliness", clean up imports)
-- documentation:
-    - funciton documentations as required (see slides)
-    - general comments: remove/check for unnecessary comments, add comments where useful
-    - as done for mcts.py
-- write README file (first draft at least)
-- add AI statement somewhere
+- extend README file
 - update gitignore file to ignore unnecessary files
-- add requirements fie?
+- add requirements file?
+- 

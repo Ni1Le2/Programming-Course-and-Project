@@ -4,7 +4,7 @@ from game_utils import BoardPiece, PlayerAction, SavedState, BOARD_COLS, get_low
 def generate_move_random(
     board: np.ndarray, player: BoardPiece, saved_state: SavedState | None
 ) -> tuple[PlayerAction, SavedState | None]:
-    # Choose a valid, non-full column randomly and return it as `action`
+    # choose a valid, non-full column randomly and return it as `action`
     valid_action = False
     # never finds valid action if game is full, but in that case we have a draw
     while not valid_action:

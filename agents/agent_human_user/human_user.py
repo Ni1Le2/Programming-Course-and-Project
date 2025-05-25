@@ -13,6 +13,23 @@ def user_move(board: np.ndarray,
               player: BoardPiece,
               saved_state: SavedState | None) -> tuple[PlayerAction, SavedState | None]:
     """
+    Handles the user's move input by repeatedly prompting until a valid move is provided.
+
+    Parameters
+    ----------
+    board : np.ndarray
+        The current game board.
+
+    player : BoardPiece
+        The current player making a move.
+
+    saved_state : SavedState | None
+        Any saved state relevant to the current player’s turn.
+
+    Returns
+    -------
+    tuple[PlayerAction, SavedState | None]
+        The valid player action and the updated saved state.
     """
     move_status = None
     while move_status != MoveStatus.IS_VALID:
@@ -26,8 +43,11 @@ def user_move(board: np.ndarray,
             print('Try again.')
     return input_move, saved_state
 
+
 def convert_str_to_action(input_move_string: str) -> PlayerAction | None:
     """
+    Convert a string input from the user to a PlayerAction (int). If conversion fails,
+    inform user and return None.
     """
     try:
         input_move = PlayerAction(input_move_string)

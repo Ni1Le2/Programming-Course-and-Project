@@ -287,3 +287,4 @@ def get_all_valid_actions(board: np.ndarray) -> list[PlayerAction]:
         if get_lowest_empty_row(board, col_i) >= 0:
             all_valid_actions.append(col_i)
     return all_valid_actions
+
